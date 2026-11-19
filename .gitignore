@@ -1,0 +1,3 @@
+jobs/
+*.status
+*.result.txt
