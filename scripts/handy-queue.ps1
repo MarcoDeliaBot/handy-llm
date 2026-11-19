@@ -1,5 +1,6 @@
 # handy-queue.ps1 - run every task file (*.txt) of a folder, one after another, with handy.ps1.
 # Tasks already finished with OK are skipped, so the queue can be restarted safely.
+# Files whose name starts with _ are notes, not tasks, and are skipped too.
 #
 # Usage (in the background):
 #   Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','"<path>\handy-queue.ps1"','-Folder','"<job folder>"'
@@ -16,7 +17,7 @@ param(
 )
 $utf8 = New-Object System.Text.UTF8Encoding $false
 $done = Join-Path $Folder '_queue.status'
-$list = @(Get-ChildItem $Folder -Filter *.txt | Where-Object { $_.Name -notmatch '\.result\.txt$' } | Sort-Object Name)
+$list = @(Get-ChildItem $Folder -Filter *.txt | Where-Object { $_.Name -notmatch '\.result\.txt$' -and $_.Name -notmatch '^_' } | Sort-Object Name)
 $extra = @()
 if ($Api) { $extra += '-Api', $Api }
 if ($BaseUrl) { $extra += '-BaseUrl', $BaseUrl }
