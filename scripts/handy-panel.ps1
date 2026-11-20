@@ -141,7 +141,11 @@ while ($listener.IsListening) {
         if ($w.kind -eq 'cloud' -and -not $k) { throw 'no API key' }
         $r = Invoke-HandyChat $w $k @(@{ role = 'user'; content = 'Reply with the single word OK.' }) -Timeout 120
         SendJson $ctx @{ ok = $true; answer = $r.content.Trim(); seconds = [math]::Round($r.seconds, 1); tokensOut = $r.tokensOut }
-      } catch { SendJson $ctx @{ ok = $false; error = $_.Exception.Message } 200 }
+      } catch {
+        $code = 0; try { $code = [int]$_.Exception.Response.StatusCode } catch {}
+        $hint = switch ($code) { 401 { 'hint401' } 403 { 'hint401' } 404 { 'hint404' } 429 { 'hint429' } default { '' } }
+        SendJson $ctx @{ ok = $false; error = $_.Exception.Message; hint = $hint } 200
+      }
     } else {
       Send $ctx 404 'not found' 'text/plain'
     }

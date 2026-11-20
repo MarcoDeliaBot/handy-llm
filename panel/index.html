@@ -122,7 +122,7 @@ const T = {
     keySaved: 'saved', keyNone: 'none', saveKey: 'Save', removeKey: 'Remove', test: 'Test', testing: 'Testing…', remove: 'Delete',
     saving: 'saving…', savedOk: 'saved', ollamaOn: 'Ollama', ollamaOff: 'Ollama not running', onGpu: 'loaded', up: 'running', down: 'off',
     noUsage: 'No tasks yet.', noJobs: 'No job folders yet.', cloudTok: 'Cloud workers: {n} tokens', newName: 'Name of the new server (OpenAI-compatible):',
-    skipPrivate: 'skipped: cloud', skipFiles: 'skipped: not Ollama-compatible', accountWarn: 'Replace ACCOUNT_ID in the address with your Cloudflare account ID.', ollamaCloudWarn: 'This model runs in Ollama\'s cloud: data leaves your PC, and it is never used for private data.', skipOff: 'switched off', models: '{n} models', confirmDel: 'Delete this worker?' },
+    skipPrivate: 'skipped: cloud', skipFiles: 'skipped: not Ollama-compatible', keyEmpty: 'Paste the key first.', keyStored: 'Key saved on this PC (encrypted). Press Test to check it works.', keyNotStored: 'The key was not saved.', keyRemoved: 'Key removed.', hint401: 'the service refused the key: check it is a key for using models (on OpenRouter: Keys, not Management keys) and that it is still active.', hint404: 'the model or address was not found: load the list and pick a model again.', hint429: 'too many requests or free quota used up: try again later.', accountWarn: 'Replace ACCOUNT_ID in the address with your Cloudflare account ID.', ollamaCloudWarn: 'This model runs in Ollama\'s cloud: data leaves your PC, and it is never used for private data.', skipOff: 'switched off', models: '{n} models', confirmDel: 'Delete this worker?' },
   it: { title: '· operai', lanesTitle: 'Corsie', lanesSub: 'Chi fa quale tipo di lavoro, in ordine. Se il primo operaio sbaglia o risponde vuoto, passa al successivo.',
     workersTitle: 'Operai', workersSub: 'Accendi quelli che vuoi usare. Le chiavi restano su questo PC, cifrate per il tuo utente Windows.',
     addWorker: '+ Aggiungi un server', usageTitle: 'Lavoro fatto', localTokens: 'Token scritti dagli operai locali (gratis)', colWorker: 'Operaio', colTasks: 'Compiti', colOk: 'OK', colToday: 'Oggi', colTokens: 'Token scritti',
@@ -135,7 +135,7 @@ const T = {
     keySaved: 'salvata', keyNone: 'nessuna', saveKey: 'Salva', removeKey: 'Togli', test: 'Prova', testing: 'Provo…', remove: 'Elimina',
     saving: 'salvo…', savedOk: 'salvato', ollamaOn: 'Ollama', ollamaOff: 'Ollama spento', onGpu: 'caricato', up: 'acceso', down: 'spento',
     noUsage: 'Ancora nessun compito.', noJobs: 'Ancora nessuna cartella di lavoro.', cloudTok: 'Operai in cloud: {n} token', newName: 'Nome del nuovo server (compatibile OpenAI):',
-    skipPrivate: 'saltato: cloud', skipFiles: 'saltato: non compatibile con Ollama', accountWarn: 'Sostituisci ACCOUNT_ID nell\'indirizzo con l\'ID del tuo account Cloudflare.', ollamaCloudWarn: 'Questo modello gira nel cloud di Ollama: i dati escono dal PC, e non viene mai usato per i dati riservati.', skipOff: 'spento', models: '{n} modelli', confirmDel: 'Eliminare questo operaio?' }
+    skipPrivate: 'saltato: cloud', skipFiles: 'saltato: non compatibile con Ollama', keyEmpty: 'Prima incolla la chiave.', keyStored: 'Chiave salvata su questo PC (cifrata). Premi Prova per controllare che funzioni.', keyNotStored: 'La chiave non è stata salvata.', keyRemoved: 'Chiave tolta.', hint401: 'il servizio ha rifiutato la chiave: controlla che sia una chiave per usare i modelli (su OpenRouter: Keys, non Management keys) e che sia ancora attiva.', hint404: 'modello o indirizzo non trovato: carica l\'elenco e scegli di nuovo il modello.', hint429: 'troppe richieste o quota gratuita finita: riprova più tardi.', accountWarn: 'Sostituisci ACCOUNT_ID nell\'indirizzo con l\'ID del tuo account Cloudflare.', ollamaCloudWarn: 'Questo modello gira nel cloud di Ollama: i dati escono dal PC, e non viene mai usato per i dati riservati.', skipOff: 'spento', models: '{n} modelli', confirmDel: 'Eliminare questo operaio?' }
 };
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 let lang = (store.get('handy-lang') || navigator.language || 'en').slice(0, 2) === 'it' ? 'it' : 'en';
@@ -211,7 +211,7 @@ function renderWorkers() {
       <datalist id="ml-${esc(w.id)}">${list.map(m => `<option value="${esc(m)}">`).join('')}</datalist>
       ${/ACCOUNT_ID/.test(w.baseUrl) ? `<div class="warn">${t('accountWarn')}</div>` : ''}
       ${w.kind !== 'cloud' && isCloud(w) ? `<div class="warn">${t('ollamaCloudWarn')}</div>` : ''}
-      ${w.kind === 'cloud' ? `<label>${t('key')} · <span class="${w.hasKey ? 'ok' : 'muted'}">${w.hasKey ? t('keySaved') : t('keyNone')}</span></label>
+      ${w.kind === 'cloud' ? `<label class="row between">${t('key')} <span class="badge ${w.hasKey ? 'b-local' : ''}">${w.hasKey ? '✓ ' + t('keySaved') : t('keyNone')}</span></label>
         <div class="keyrow"><input type="password" data-a="keyval" autocomplete="off" placeholder="${w.hasKey ? '••••••••' : ''}"><button data-a="savekey">${t('saveKey')}</button>${w.hasKey ? `<button data-a="rmkey">${t('removeKey')}</button>` : ''}</div>
         <div class="warn">${t('cloudWarn')}</div>` : ''}
       <div class="row between" style="margin-top:12px"><button data-a="test">${t('test')}</button>${w.custom ? `<button data-a="del">${t('remove')}</button>` : ''}</div>
@@ -227,10 +227,12 @@ function renderWorkers() {
       const out = $('[data-r]', el);
       try {
         if (b.dataset.a === 'models') { out.textContent = '…'; const r = await api('/api/models', { id: w.id }); modelLists[w.id] = r.models || []; renderWorkers(); $('[data-r]', box.children[idx]).textContent = t('models', { n: modelLists[w.id].length }); }
-        if (b.dataset.a === 'savekey') { const v = $('[data-a=keyval]', el).value.trim(); if (!v) return; await api('/api/key', { id: w.id, key: v }); w.hasKey = true; renderWorkers(); }
-        if (b.dataset.a === 'rmkey') { await api('/api/key', { id: w.id, key: '' }); w.hasKey = false; renderWorkers(); }
+        if (b.dataset.a === 'savekey') { const v = $('[data-a=keyval]', el).value.trim(); if (!v) { out.className = 'result bad'; out.textContent = '✕ ' + t('keyEmpty'); return; }
+          const r = await api('/api/key', { id: w.id, key: v }); w.hasKey = !!r.hasKey; renderWorkers(); const o2 = $('[data-r]', box.children[idx]);
+          o2.className = 'result ' + (w.hasKey ? 'ok' : 'bad'); o2.textContent = w.hasKey ? '✓ ' + t('keyStored') : '✕ ' + t('keyNotStored'); }
+        if (b.dataset.a === 'rmkey') { await api('/api/key', { id: w.id, key: '' }); w.hasKey = false; renderWorkers(); const o2 = $('[data-r]', box.children[idx]); o2.className = 'result'; o2.textContent = t('keyRemoved'); }
         if (b.dataset.a === 'test') { out.className = 'result'; out.textContent = t('testing'); const r = await api('/api/test', { id: w.id });
-          out.className = 'result ' + (r.ok ? 'ok' : 'bad'); out.textContent = r.ok ? `✓ "${r.answer.slice(0, 40)}" · ${r.seconds}s` : '✕ ' + r.error; }
+          out.className = 'result ' + (r.ok ? 'ok' : 'bad'); out.textContent = r.ok ? `✓ "${r.answer.slice(0, 40)}" · ${r.seconds}s` : '✕ ' + r.error + (r.hint ? ' — ' + t(r.hint) : ''); }
         if (b.dataset.a === 'del' && confirm(t('confirmDel'))) { cfg.workers.splice(idx, 1); for (const l of LANES) cfg.lanes[l] = (cfg.lanes[l] || []).filter(x => x !== w.id); renderWorkers(); renderLanes(); save(); }
       } catch (err) { out.className = 'result bad'; out.textContent = '✕ ' + err.message; }
     });
