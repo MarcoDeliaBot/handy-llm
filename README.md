@@ -51,6 +51,26 @@ ollama create qwen3.8-cc -f "$env:USERPROFILE\handy-llm\examples\Modelfile"
 
 Then add `skills/handy-llm` to your Claude skills: upload the folder as a skill in the Claude app, or copy it into `~/.claude/skills/` for Claude Code.
 
+## The workers panel
+
+Choose your workers from a small web page that runs only on your PC:
+
+```powershell
+cd "$env:USERPROFILE\handy-llm"
+.\handy-panel.cmd          # or: powershell -File scripts\handy-panel.ps1 -Open
+```
+
+It opens `http://localhost:8765` (English or Italian, it follows your browser) with:
+
+- **Workers**: Ollama, llama.cpp, LM Studio, and the cloud services with a free tier (Groq, Cerebras, Google AI Studio, Mistral, OpenRouter, Cloudflare Workers AI) plus Anthropic. Switch each one on or off, pick its model from the server's own list, paste its API key, and press **Test**. You can add any other OpenAI-compatible server.
+- **Lanes**: who does which kind of work, in order: *text*, *code*, *files* (editing a folder through Claude Code, Ollama-compatible workers only) and *private data* (local workers only). If a worker fails or answers empty, the next one in the lane takes over.
+- **Work done**: tasks and tokens per worker, and how many tokens the local workers wrote for free.
+- **Recent jobs**: the status of the queues in the `jobs` folder.
+
+Your settings and keys live in `%USERPROFILE%\.handy-llm`, never in the repository. Keys are encrypted with Windows DPAPI, so only your Windows user can read them. The panel listens only on this computer and refuses requests from other web pages.
+
+Workers whose address is not on this PC, and Ollama models ending in `:cloud`, count as cloud: the panel marks them, the status line says so, and the private-data lane never uses them.
+
 ## Use the scripts directly
 
 ```powershell
@@ -58,8 +78,11 @@ cd "$env:USERPROFILE\handy-llm"
 mkdir jobs\test
 "TASK: translate into English.`nTEXT:`n<<<`nCiao, come stai?`n>>>" | Set-Content -Encoding UTF8 jobs\test\01-hello.txt
 
-# Ollama
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\handy.ps1 -Task jobs\test\01-hello.txt
+# the workers you chose in the panel for a lane (text, code or private)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\handy.ps1 -Task jobs\test\01-hello.txt -Lane text
+
+# or name the server yourself: Ollama
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\handy.ps1 -Task jobs\test\01-hello.txt -Api ollama -Model qwen3.8-cc
 
 # any OpenAI-compatible server (LM Studio default port shown)
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\handy.ps1 -Task jobs\test\01-hello.txt -Api openai -BaseUrl http://127.0.0.1:1234/v1 -Model <model-id>
@@ -70,7 +93,7 @@ Get-Content jobs\test\01-hello.result.txt, jobs\test\01-hello.result.txt.status
 A whole folder, in order, in the background:
 
 ```powershell
-Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$PWD\scripts\handy-queue.ps1`"",'-Folder',"`"$PWD\jobs\test`""
+Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$PWD\scripts\handy-queue.ps1`"",'-Folder',"`"$PWD\jobs\test`"",'-Lane','text'""
 Get-Content jobs\test\_queue.status
 ```
 
@@ -81,7 +104,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\handy-files.ps1 -Fol
 Get-Content jobs\test\02-replace-phone.files.status
 ```
 
-Environment variables: `HANDY_MODEL`, `HANDY_API` (`ollama` or `openai`), `HANDY_BASE_URL`, `HANDY_API_KEY`, `HANDY_ANTHROPIC_URL` (files mode), `HANDY_HOME` (install folder, used by the skill).
+Environment variables (they switch the scripts to direct mode, bypassing the panel): `HANDY_MODEL`, `HANDY_API` (`ollama` or `openai`), `HANDY_BASE_URL`, `HANDY_API_KEY`, `HANDY_ANTHROPIC_URL` (files mode). `HANDY_HOME` is the install folder used by the skill, `HANDY_DATA` the settings folder (default `%USERPROFILE%\.handy-llm`).
 
 ## What to expect
 

@@ -9,12 +9,21 @@
 param(
   [Parameter(Mandatory=$true)][string]$Folder,
   [Parameter(Mandatory=$true)][string]$Task,
-  [string]$Model = $(if ($env:HANDY_MODEL) { $env:HANDY_MODEL } else { 'qwen3.8-cc' }),
-  [string]$BaseUrl = $(if ($env:HANDY_ANTHROPIC_URL) { $env:HANDY_ANTHROPIC_URL } else { 'http://127.0.0.1:11434' }),
+  [string]$Model = $env:HANDY_MODEL,
+  [string]$BaseUrl = $env:HANDY_ANTHROPIC_URL,
   [string]$Token = 'ollama',
   [int]$MaxTurns = 40
 )
 $utf8 = New-Object System.Text.UTF8Encoding $false
+. (Join-Path $PSScriptRoot 'handy-config.ps1')
+# Without -Model/-BaseUrl, use the first enabled worker of the "files" lane chosen in the panel
+# (only workers with an Anthropic-compatible endpoint, such as Ollama, can drive Claude Code).
+if (-not $Model -or -not $BaseUrl) {
+  $w = @(Get-HandyLaneWorkers (Get-HandyConfig) 'files') | Select-Object -First 1
+  if ($w) { if (-not $Model) { $Model = $w.model }; if (-not $BaseUrl) { $BaseUrl = $w.baseUrl } }
+  if (-not $Model) { $Model = 'qwen3.8-cc' }
+  if (-not $BaseUrl) { $BaseUrl = 'http://127.0.0.1:11434' }
+}
 $base = [IO.Path]::ChangeExtension($Task, $null).TrimEnd('.')
 $status = "$base.files.status"; $output = "$base.files.json"
 [IO.File]::WriteAllText($status, "RUNNING | started " + (Get-Date -Format 'HH:mm:ss'), $utf8)

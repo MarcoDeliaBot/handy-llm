@@ -30,11 +30,14 @@ When switched on: confirm in one line and run the check in §2 at once, so the f
 
 ## 1. Routing
 
+The user chooses the workers in the panel (`handy-panel.cmd`, http://localhost:8765): which local and cloud models are on, and their order in four lanes: `text`, `code`, `files`, `private`. Pass the lane to the scripts (`-Lane text|code|private`; files mode uses the `files` lane) and do not name a model yourself unless the user asks: the scripts follow the panel and fall back to the next worker of the lane by themselves. The status line says which worker answered, and whether data went to a cloud service. Confidential data always goes to `-Lane private`, which never uses cloud workers.
+
 | Piece of work | Who does it |
 |---|---|
-| Translations, rewrites, summaries, titles and meta descriptions, classification, extracting data from a text, test cases, bulk checks on texts | **Local LLM, text mode** (§3–5) |
+| Translations, rewrites, summaries, titles and meta descriptions, classification, extracting data from a text, test cases, bulk checks on texts | **Text mode, `-Lane text`** (§3–5) |
+| Writing or fixing code returned as text | **Text mode, `-Lane code`** |
 | Reading and editing files in one folder: replacements, additions, fixes in HTML, docs, code, config | **Local LLM, files mode** (§6) |
-| Texts or files with confidential data | **Local LLM** (data never leaves the PC) |
+| Texts or files with confidential data | **`-Lane private`** (local workers only, data never leaves the PC) |
 | Shell commands (git, npm, build, deploy), web browsing, connectors, urgent work, pieces the local model failed twice | **Cloud helper** (for example a fast Claude subagent) or Claude itself |
 | Payments, sending email or messages, irreversible actions, decisions | **Claude itself**, with the user's approval |
 
@@ -60,6 +63,7 @@ ollama ps
 | scripts missing | ask the user to clone the repository into `%USERPROFILE%\handy-llm` (see README) |
 | `OLLAMA NOT RUNNING` | start the Ollama app, wait 10 s, check **once** more. With an OpenAI-compatible server instead (LM Studio, llama.cpp, vLLM) check its `/v1/models` |
 | model missing | ask before downloading: models are many GB |
+| `ERROR | no enabled worker in lane` | ask the user to switch a worker on in the panel |
 | `claude` missing | files mode unavailable: file pieces go to the cloud helper |
 | another model is loaded and the GPU is small | switching costs 20–60 s each time: put **all** pieces in one queue, never alternate |
 
@@ -114,7 +118,7 @@ $c="<job folder>"
 Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$env:USERPROFILE\handy-llm\scripts\handy-queue.ps1`"",'-Folder',"`"$c`""
 ```
 
-Options: `-Think`, `-Json`, `-Model <name>`, `-Api openai -BaseUrl http://127.0.0.1:1234/v1` (LM Studio, llama.cpp, vLLM).
+Options: `-Lane text|code|private` (default `text`), `-Think`, `-Json`. Naming a server (`-Api`, `-BaseUrl`, `-Model`) bypasses the panel.
 
 **Progress** (repeat until `DONE`):
 
@@ -134,7 +138,7 @@ Get-ChildItem "<job folder>" -Filter *.result.txt | % { "== $($_.Name) =="; Get-
 
 | Status | Meaning |
 |---|---|
-| `OK | …` | done: go to the check |
+| `OK | <worker> | …` | done: go to the check. `fallback after:` lists the workers that failed first; `NOTE: data sent to a cloud service` means a cloud worker answered |
 | `WARNING: task possibly TRUNCATED` | the text did not fit: split it |
 | `WARNING: answer CUT by length` | the answer stopped early: split the task |
 | `ERROR | …` | see §8 |

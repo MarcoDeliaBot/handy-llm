@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>handy-llm · workers</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #18202b; --muted: #5d6877; --line: #e2e6ec;
+    --blue: #2563eb; --blue-soft: #e8efff; --green: #15803d; --green-soft: #e7f6ec;
+    --amber: #a15c07; --amber-soft: #fdf3e2; --red: #b42318; --red-soft: #fdecea;
+    --radius: 12px; --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1318; --card: #171c23; --ink: #e8ecf1; --muted: #9aa5b4; --line: #2a313b;
+      --blue: #5b8cff; --blue-soft: #1c2740; --green: #4ade80; --green-soft: #14281c;
+      --amber: #f5b454; --amber-soft: #2d2213; --red: #f87171; --red-soft: #2e1717; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 28px; border-bottom: 1px solid var(--line); background: var(--card); position: sticky; top: 0; z-index: 2; }
+  h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+  h1 span { color: var(--muted); font-weight: 500; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 28px 60px; display: grid; gap: 28px; }
+  section > .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .between { justify-content: space-between; }
+  .badge { font-size: 11.5px; padding: 2px 8px; border-radius: 99px; background: var(--line); color: var(--muted); white-space: nowrap; }
+  .b-local { background: var(--green-soft); color: var(--green); }
+  .b-free { background: var(--blue-soft); color: var(--blue); }
+  .b-paid { background: var(--amber-soft); color: var(--amber); }
+  .warn { font-size: 12.5px; color: var(--amber); background: var(--amber-soft); border-radius: 8px; padding: 6px 9px; margin-top: 10px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  input[type=text], input[type=password], select { width: 100%; font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+  input.mono { font-family: var(--mono); font-size: 12.5px; }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  button:hover { border-color: var(--blue); }
+  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  button.icon { padding: 2px 6px; flex: none; }
+  .name { font-weight: 600; font-size: 15px; border: 0; background: transparent; padding: 0; width: 100%; }
+  .switch { position: relative; width: 40px; height: 22px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--line); border-radius: 99px; transition: .15s; cursor: pointer; }
+  .slider::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .switch input:checked + .slider { background: var(--blue); }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+  .off { opacity: .62; }
+  .lane ol { margin: 8px 0 10px; padding: 0; list-style: none; display: grid; gap: 6px; }
+  .lane li { min-width: 0; display: flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 6px 5px 10px; font-size: 13.5px; }
+  .lane li .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lane li .pos { color: var(--muted); font-variant-numeric: tabular-nums; width: 16px; }
+  .lane li.skip { opacity: .5; text-decoration: line-through; }
+  .empty { color: var(--red); font-size: 13px; }
+  .result { font-size: 12.5px; margin-top: 8px; min-height: 18px; }
+  .ok { color: var(--green); } .bad { color: var(--red); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: var(--muted); }
+  .dot.on { background: var(--green); } .dot.down { background: var(--red); }
+  .saved { font-size: 12.5px; color: var(--muted); min-width: 70px; text-align: right; }
+  .keyrow { display: flex; gap: 6px; }
+  .keyrow input { flex: 1; }
+  .total { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>handy-llm <span data-t="title">· workers</span></h1>
+  <div class="row">
+    <div class="status" id="topStatus"></div>
+    <span class="saved" id="saved"></span>
+    <button id="lang" title="Language">IT</button>
+  </div>
+</header>
+<main>
+  <section>
+    <div class="head"><h2 data-t="lanesTitle">Lanes</h2></div>
+    <p class="sub" data-t="lanesSub">Who does which kind of work, in order. If the first worker fails or answers empty, the next one takes over.</p>
+    <div class="grid" id="lanes"></div>
+  </section>
+
+  <section>
+    <div class="head"><h2 data-t="workersTitle">Workers</h2><button id="addWorker" data-t="addWorker">+ Add a server</button></div>
+    <p class="sub" data-t="workersSub">Switch on the ones you want to use. Keys stay on this PC, encrypted for your Windows user.</p>
+    <div class="grid" id="workers"></div>
+  </section>
+
+  <section>
+    <div class="head"><h2 data-t="usageTitle">Work done</h2></div>
+    <div class="grid" style="grid-template-columns: 1fr 2fr;">
+      <div class="card"><div class="muted" data-t="localTokens">Tokens written by local workers (free)</div><div class="total" id="localTotal">0</div><div class="muted" id="cloudTotal"></div></div>
+      <div class="card"><table><thead><tr><th data-t="colWorker">Worker</th><th class="num" data-t="colTasks">Tasks</th><th class="num" data-t="colOk">OK</th><th class="num" data-t="colToday">Today</th><th class="num" data-t="colTokens">Tokens out</th></tr></thead><tbody id="usage"></tbody></table></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><h2 data-t="jobsTitle">Recent jobs</h2></div>
+    <div class="card"><table><thead><tr><th data-t="colJob">Job folder</th><th data-t="colStatus">Status</th><th data-t="colChanged">Changed</th></tr></thead><tbody id="jobs"></tbody></table></div>
+  </section>
+</main>
+
+<script>
+const T = {
+  en: { title: '· workers', lanesTitle: 'Lanes', lanesSub: 'Who does which kind of work, in order. If the first worker fails or answers empty, the next one takes over.',
+    workersTitle: 'Workers', workersSub: 'Switch on the ones you want to use. Keys stay on this PC, encrypted for your Windows user.',
+    addWorker: '+ Add a server', usageTitle: 'Work done', localTokens: 'Tokens written by local workers (free)', colWorker: 'Worker', colTasks: 'Tasks', colOk: 'OK', colToday: 'Today', colTokens: 'Tokens out',
+    jobsTitle: 'Recent jobs', colJob: 'Job folder', colStatus: 'Status', colChanged: 'Changed',
+    lane_text: 'Text', lane_code: 'Code', lane_files: 'Files', lane_private: 'Private data',
+    laneSub_text: 'Translations, rewrites, summaries, extraction.', laneSub_code: 'Writing and fixing code.',
+    laneSub_files: 'Editing files in a folder through Claude Code. Only Ollama-compatible workers.', laneSub_private: 'Confidential data. Local workers only: nothing leaves the PC.',
+    add: 'Add…', noWorker: 'No enabled worker: these tasks will fail.', local: 'Local', free: 'Free tier', paid: 'Paid',
+    cloudWarn: 'Data sent to this service leaves your PC.', url: 'Server address', model: 'Model', loadModels: 'Load list', key: 'API key',
+    keySaved: 'saved', keyNone: 'none', saveKey: 'Save', removeKey: 'Remove', test: 'Test', testing: 'Testing…', remove: 'Delete',
+    saving: 'saving…', savedOk: 'saved', ollamaOn: 'Ollama', ollamaOff: 'Ollama not running', onGpu: 'loaded', up: 'running', down: 'off',
+    noUsage: 'No tasks yet.', noJobs: 'No job folders yet.', cloudTok: 'Cloud workers: {n} tokens', newName: 'Name of the new server (OpenAI-compatible):',
+    skipPrivate: 'skipped: cloud', skipFiles: 'skipped: not Ollama-compatible', accountWarn: 'Replace ACCOUNT_ID in the address with your Cloudflare account ID.', ollamaCloudWarn: 'This model runs in Ollama\'s cloud: data leaves your PC, and it is never used for private data.', skipOff: 'switched off', models: '{n} models', confirmDel: 'Delete this worker?' },
+  it: { title: '· operai', lanesTitle: 'Corsie', lanesSub: 'Chi fa quale tipo di lavoro, in ordine. Se il primo operaio sbaglia o risponde vuoto, passa al successivo.',
+    workersTitle: 'Operai', workersSub: 'Accendi quelli che vuoi usare. Le chiavi restano su questo PC, cifrate per il tuo utente Windows.',
+    addWorker: '+ Aggiungi un server', usageTitle: 'Lavoro fatto', localTokens: 'Token scritti dagli operai locali (gratis)', colWorker: 'Operaio', colTasks: 'Compiti', colOk: 'OK', colToday: 'Oggi', colTokens: 'Token scritti',
+    jobsTitle: 'Lavori recenti', colJob: 'Cartella del lavoro', colStatus: 'Stato', colChanged: 'Modificata',
+    lane_text: 'Testi', lane_code: 'Codice', lane_files: 'File', lane_private: 'Dati riservati',
+    laneSub_text: 'Traduzioni, riscritture, riassunti, estrazioni.', laneSub_code: 'Scrivere e correggere codice.',
+    laneSub_files: 'Modifiche ai file di una cartella tramite Claude Code. Solo operai compatibili con Ollama.', laneSub_private: 'Dati riservati. Solo operai locali: niente esce dal PC.',
+    add: 'Aggiungi…', noWorker: 'Nessun operaio acceso: questi compiti falliranno.', local: 'Locale', free: 'Gratis con limiti', paid: 'A pagamento',
+    cloudWarn: 'I dati inviati a questo servizio escono dal tuo PC.', url: 'Indirizzo del server', model: 'Modello', loadModels: 'Carica elenco', key: 'Chiave API',
+    keySaved: 'salvata', keyNone: 'nessuna', saveKey: 'Salva', removeKey: 'Togli', test: 'Prova', testing: 'Provo…', remove: 'Elimina',
+    saving: 'salvo…', savedOk: 'salvato', ollamaOn: 'Ollama', ollamaOff: 'Ollama spento', onGpu: 'caricato', up: 'acceso', down: 'spento',
+    noUsage: 'Ancora nessun compito.', noJobs: 'Ancora nessuna cartella di lavoro.', cloudTok: 'Operai in cloud: {n} token', newName: 'Nome del nuovo server (compatibile OpenAI):',
+    skipPrivate: 'saltato: cloud', skipFiles: 'saltato: non compatibile con Ollama', accountWarn: 'Sostituisci ACCOUNT_ID nell\'indirizzo con l\'ID del tuo account Cloudflare.', ollamaCloudWarn: 'Questo modello gira nel cloud di Ollama: i dati escono dal PC, e non viene mai usato per i dati riservati.', skipOff: 'spento', models: '{n} modelli', confirmDel: 'Eliminare questo operaio?' }
+};
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+let lang = (store.get('handy-lang') || navigator.language || 'en').slice(0, 2) === 'it' ? 'it' : 'en';
+const t = (k, v) => { let s = (T[lang][k] ?? T.en[k] ?? k); if (v) for (const [a, b] of Object.entries(v)) s = s.replace('{' + a + '}', b); return s; };
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const LANES = ['text', 'code', 'files', 'private'];
+let cfg = { workers: [], lanes: {} };
+const modelLists = {};
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Handy': '1' }, body: JSON.stringify(body) };
+  const r = await fetch(path, opt);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok && j.error) throw new Error(j.error);
+  return j;
+}
+
+let saveTimer;
+function save() {
+  $('#saved').textContent = t('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try { cfg = await api('/api/config', { workers: cfg.workers, lanes: cfg.lanes }); $('#saved').textContent = t('savedOk'); renderLanes(); }
+    catch (e) { $('#saved').textContent = e.message; }
+  }, 450);
+}
+
+function tierBadge(w) { return `<span class="badge b-${esc(w.tier)}">${t(w.tier)}</span>`; }
+const isCloud = w => w.kind !== 'local' || /(:|-)cloud$/.test(w.model || '');
+function skipReason(lane, w) {
+  if (!w.enabled) return t('skipOff');
+  if (lane === 'private' && isCloud(w)) return t('skipPrivate');
+  if (lane === 'files' && !w.filesCapable) return t('skipFiles');
+  return '';
+}
+
+function renderLanes() {
+  const box = $('#lanes'); box.innerHTML = '';
+  for (const lane of LANES) {
+    const chain = cfg.lanes[lane] || [];
+    const usable = chain.filter(id => { const w = cfg.workers.find(x => x.id === id); return w && !skipReason(lane, w); });
+    const el = document.createElement('div'); el.className = 'card lane';
+    el.innerHTML = `<h2>${t('lane_' + lane)}</h2><div class="muted" style="font-size:12.5px">${t('laneSub_' + lane)}</div>
+      <ol>${chain.map((id, i) => { const w = cfg.workers.find(x => x.id === id); if (!w) return ''; const why = skipReason(lane, w);
+        return `<li class="${why ? 'skip' : ''}" title="${esc(why)}"><span class="pos">${i + 1}</span><span class="n">${esc(w.name)}${w.model ? ' · <span class="muted">' + esc(w.model) + '</span>' : ''}</span>
+        <button class="icon" data-a="up" data-i="${i}" aria-label="up">↑</button><button class="icon" data-a="down" data-i="${i}" aria-label="down">↓</button><button class="icon" data-a="rm" data-i="${i}" aria-label="remove">✕</button></li>`; }).join('')}</ol>
+      ${usable.length ? '' : `<div class="empty">${t('noWorker')}</div>`}
+      <select data-a="add"><option value="">${t('add')}</option>${cfg.workers.filter(w => !chain.includes(w.id)).map(w => `<option value="${esc(w.id)}">${esc(w.name)}${w.enabled ? '' : ' (' + t('skipOff') + ')'}</option>`).join('')}</select>`;
+    el.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const i = +b.dataset.i, c = cfg.lanes[lane];
+      if (b.dataset.a === 'up' && i > 0) [c[i - 1], c[i]] = [c[i], c[i - 1]];
+      if (b.dataset.a === 'down' && i < c.length - 1) [c[i + 1], c[i]] = [c[i], c[i + 1]];
+      if (b.dataset.a === 'rm') c.splice(i, 1);
+      renderLanes(); save();
+    });
+    $('select', el).addEventListener('change', e => { if (!e.target.value) return; (cfg.lanes[lane] ||= []).push(e.target.value); renderLanes(); save(); });
+    box.appendChild(el);
+  }
+}
+
+function renderWorkers() {
+  const box = $('#workers'); box.innerHTML = '';
+  cfg.workers.forEach((w, idx) => {
+    const el = document.createElement('div'); el.className = 'card' + (w.enabled ? '' : ' off');
+    const list = modelLists[w.id] || [];
+    el.innerHTML = `<div class="row between"><input class="name" value="${esc(w.name)}" data-f="name" aria-label="name">
+        <label class="switch" title="on/off"><input type="checkbox" data-f="enabled" ${w.enabled ? 'checked' : ''}><span class="slider"></span></label></div>
+      <div class="row" style="margin-top:6px">${tierBadge(w)}<span class="badge">${w.api === 'ollama' ? 'Ollama API' : 'OpenAI API'}</span></div>
+      <label>${t('url')}</label><input type="text" class="mono" data-f="baseUrl" value="${esc(w.baseUrl)}">
+      <label>${t('model')}</label><div class="keyrow"><input type="text" class="mono" data-f="model" list="ml-${esc(w.id)}" value="${esc(w.model)}" placeholder="—"><button data-a="models">${t('loadModels')}</button></div>
+      <datalist id="ml-${esc(w.id)}">${list.map(m => `<option value="${esc(m)}">`).join('')}</datalist>
+      ${/ACCOUNT_ID/.test(w.baseUrl) ? `<div class="warn">${t('accountWarn')}</div>` : ''}
+      ${w.kind !== 'cloud' && isCloud(w) ? `<div class="warn">${t('ollamaCloudWarn')}</div>` : ''}
+      ${w.kind === 'cloud' ? `<label>${t('key')} · <span class="${w.hasKey ? 'ok' : 'muted'}">${w.hasKey ? t('keySaved') : t('keyNone')}</span></label>
+        <div class="keyrow"><input type="password" data-a="keyval" autocomplete="off" placeholder="${w.hasKey ? '••••••••' : ''}"><button data-a="savekey">${t('saveKey')}</button>${w.hasKey ? `<button data-a="rmkey">${t('removeKey')}</button>` : ''}</div>
+        <div class="warn">${t('cloudWarn')}</div>` : ''}
+      <div class="row between" style="margin-top:12px"><button data-a="test">${t('test')}</button>${w.custom ? `<button data-a="del">${t('remove')}</button>` : ''}</div>
+      <div class="result" data-r></div>`;
+    el.addEventListener('change', e => {
+      const f = e.target.dataset.f; if (!f) return;
+      w[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value.trim();
+      if (f === 'enabled') el.classList.toggle('off', !w.enabled);
+      save();
+    });
+    el.addEventListener('click', async e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const out = $('[data-r]', el);
+      try {
+        if (b.dataset.a === 'models') { out.textContent = '…'; const r = await api('/api/models', { id: w.id }); modelLists[w.id] = r.models || []; renderWorkers(); $('[data-r]', box.children[idx]).textContent = t('models', { n: modelLists[w.id].length }); }
+        if (b.dataset.a === 'savekey') { const v = $('[data-a=keyval]', el).value.trim(); if (!v) return; await api('/api/key', { id: w.id, key: v }); w.hasKey = true; renderWorkers(); }
+        if (b.dataset.a === 'rmkey') { await api('/api/key', { id: w.id, key: '' }); w.hasKey = false; renderWorkers(); }
+        if (b.dataset.a === 'test') { out.className = 'result'; out.textContent = t('testing'); const r = await api('/api/test', { id: w.id });
+          out.className = 'result ' + (r.ok ? 'ok' : 'bad'); out.textContent = r.ok ? `✓ "${r.answer.slice(0, 40)}" · ${r.seconds}s` : '✕ ' + r.error; }
+        if (b.dataset.a === 'del' && confirm(t('confirmDel'))) { cfg.workers.splice(idx, 1); for (const l of LANES) cfg.lanes[l] = (cfg.lanes[l] || []).filter(x => x !== w.id); renderWorkers(); renderLanes(); save(); }
+      } catch (err) { out.className = 'result bad'; out.textContent = '✕ ' + err.message; }
+    });
+    box.appendChild(el);
+  });
+}
+
+async function refreshStatus() {
+  try {
+    const s = await api('/api/status');
+    const parts = [];
+    parts.push(s.ollama ? `<span><span class="dot on"></span>${t('ollamaOn')} ${esc(s.ollama)}</span>` : `<span><span class="dot down"></span>${t('ollamaOff')}</span>`);
+    for (const m of s.loaded || []) parts.push(`<span class="badge">${esc(m.name)} · ${t('onGpu')} ${m.vramGB}/${m.sizeGB} GB</span>`);
+    for (const v of s.servers || []) if (v.up) parts.push(`<span><span class="dot on"></span>${esc(v.name)}</span>`);
+    $('#topStatus').innerHTML = parts.join('');
+    const u = s.usage || [];
+    $('#usage').innerHTML = u.length ? u.map(r => `<tr><td>${esc(r.worker)} <span class="badge ${r.kind === 'local' ? 'b-local' : 'b-free'}">${r.kind === 'local' ? t('local') : 'cloud'}</span></td><td class="num">${r.tasks}</td><td class="num">${r.ok}</td><td class="num">${r.today}</td><td class="num">${(r.tokensOut || 0).toLocaleString()}</td></tr>`).join('') : `<tr><td colspan="5" class="muted">${t('noUsage')}</td></tr>`;
+    const loc = u.filter(r => r.kind === 'local').reduce((a, r) => a + (r.tokensOut || 0), 0);
+    const cl = u.filter(r => r.kind !== 'local').reduce((a, r) => a + (r.tokensOut || 0), 0);
+    $('#localTotal').textContent = loc.toLocaleString();
+    $('#cloudTotal').textContent = cl ? t('cloudTok', { n: cl.toLocaleString() }) : '';
+    const j = s.jobs || [];
+    $('#jobs').innerHTML = j.length ? j.map(r => `<tr><td class="mono" style="font-family:var(--mono);font-size:12.5px">${esc(r.name)}</td><td>${esc(r.status)}</td><td>${esc(r.changed)}</td></tr>`).join('') : `<tr><td colspan="3" class="muted">${t('noJobs')}</td></tr>`;
+  } catch (e) { $('#topStatus').innerHTML = `<span><span class="dot down"></span>${esc(e.message)}</span>`; }
+}
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
+  $('#lang').textContent = lang === 'it' ? 'EN' : 'IT';
+  renderLanes(); renderWorkers(); refreshStatus();
+}
+$('#lang').addEventListener('click', () => { lang = lang === 'it' ? 'en' : 'it'; store.set('handy-lang', lang); applyLang(); });
+$('#addWorker').addEventListener('click', () => {
+  const name = prompt(t('newName')); if (!name) return;
+  let id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'server';
+  while (cfg.workers.some(w => w.id === id)) id += '-2';
+  cfg.workers.push({ id, name, kind: 'cloud', tier: 'free', api: 'openai', baseUrl: 'https://', model: '', enabled: false, filesCapable: false, custom: true });
+  renderWorkers(); renderLanes();
+});
+
+(async () => {
+  cfg = await api('/api/config');
+  applyLang();
+  setInterval(refreshStatus, 5000);
+})();
+</script>
+</body>
+</html>

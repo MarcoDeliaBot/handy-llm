@@ -4,10 +4,12 @@
 #
 # Usage (in the background):
 #   Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','"<path>\handy-queue.ps1"','-Folder','"<job folder>"'
-# Optional: -Api openai -BaseUrl <url> -Model <model> -Think -Json -Ctx <n> (passed to handy.ps1)
+# Optional: -Lane text|code|private (workers chosen in the panel), or -Api openai -BaseUrl <url> -Model <model>,
+# plus -Think -Json -Ctx <n>. Everything is passed to handy.ps1.
 # Progress: <job folder>\_queue.status  (RUNNING | n of N | file, then DONE | N tasks | time)
 param(
   [Parameter(Mandatory=$true)][string]$Folder,
+  [string]$Lane = "",
   [string]$Api = "",
   [string]$BaseUrl = "",
   [string]$Model = "",
@@ -19,6 +21,7 @@ $utf8 = New-Object System.Text.UTF8Encoding $false
 $done = Join-Path $Folder '_queue.status'
 $list = @(Get-ChildItem $Folder -Filter *.txt | Where-Object { $_.Name -notmatch '\.result\.txt$' -and $_.Name -notmatch '^_' } | Sort-Object Name)
 $extra = @()
+if ($Lane) { $extra += '-Lane', $Lane }
 if ($Api) { $extra += '-Api', $Api }
 if ($BaseUrl) { $extra += '-BaseUrl', $BaseUrl }
 if ($Model) { $extra += '-Model', $Model }
