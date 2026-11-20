@@ -4,7 +4,7 @@
 #   1. Lanes (default): the workers you picked in the panel (handy-panel.ps1) for a lane, in order.
 #      If one fails or returns an empty answer, the next one takes over.
 #        powershell -NoProfile -ExecutionPolicy Bypass -File handy.ps1 -Task <task.txt> [-Lane text|code|private]
-#      The private lane only ever uses local workers.
+#      The private lane uses only local workers, unless the user allowed cloud workers in the panel.
 #   2. Direct: name the server yourself (no panel needed).
 #        powershell ... -File handy.ps1 -Task <task.txt> -Api ollama -Model qwen3.8-cc
 #        powershell ... -File handy.ps1 -Task <task.txt> -Api openai -BaseUrl http://127.0.0.1:1234/v1 -Model <model-id>
@@ -56,7 +56,7 @@ try {
     if (-not $w.model) { $failures += "$($w.name): no model selected"; continue }
     $key = if ($w.direct) { $ApiKey } else { Get-HandyKey $w.id }
     if ($w.kind -eq 'cloud' -and -not $key) { $failures += "$($w.name): no API key"; continue }
-    if ($Lane -eq 'private' -and (Test-HandyCloud $w)) { $failures += "$($w.name): cloud model skipped for private data"; continue }
+    if ($Lane -eq 'private' -and (Test-HandyCloud $w) -and -not ($cfg -and $cfg.allowCloudPrivate)) { $failures += "$($w.name): cloud model skipped for private data"; continue }
     try {
       [IO.File]::WriteAllText($status, "RUNNING | started " + (Get-Date -Format 'HH:mm:ss') + " | worker $($w.name)", $utf8)
       $r = Invoke-HandyChat $w $key $messages -temperature $Temperature -Json:$Json -Think:$Think -Ctx $Ctx -Timeout $Timeout
@@ -69,7 +69,8 @@ try {
       if ($r.tps) { $info += " | {0:N1} tok/s" -f $r.tps }
       if ($w.api -eq 'ollama' -and $r.tokensIn -ge ($Ctx * 0.95)) { $info += " | WARNING: task possibly TRUNCATED, raise -Ctx or split the text" }
       if ($r.cut) { $info += " | WARNING: answer CUT by length" }
-      if ($isCloud) { $info += " | NOTE: data sent to a cloud service" }
+      if ($isCloud -and $Lane -eq 'private') { $info += " | WARNING: PRIVATE data sent to a cloud service (allowed in the panel)" }
+      elseif ($isCloud) { $info += " | NOTE: data sent to a cloud service" }
       if ($failures.Count) { $info += " | fallback after: " + ($failures -join '; ') }
       [IO.File]::WriteAllText($status, $info, $utf8)
       exit 0

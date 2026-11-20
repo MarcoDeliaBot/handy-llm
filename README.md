@@ -63,13 +63,13 @@ cd "$env:USERPROFILE\handy-llm"
 It opens `http://localhost:8765` (English or Italian, it follows your browser) with:
 
 - **Workers**: Ollama, llama.cpp, LM Studio, and the cloud services with a free tier (Groq, Cerebras, Google AI Studio, Mistral, OpenRouter, Cloudflare Workers AI) plus Anthropic. Switch each one on or off, pick its model from the server's own list, paste its API key, and press **Test**. You can add any other OpenAI-compatible server.
-- **Lanes**: who does which kind of work, in order: *text*, *code*, *files* (editing a folder through Claude Code, Ollama-compatible workers only) and *private data* (local workers only). If a worker fails or answers empty, the next one in the lane takes over.
+- **Lanes**: who does which kind of work, in order: *text*, *code*, *files* (editing a folder through Claude Code, Ollama-compatible workers only) and *private data* (local workers only, unless you switch on "also allow cloud workers", marked as not recommended). If a worker fails or answers empty, the next one in the lane takes over.
 - **Work done**: tasks and tokens per worker, and how many tokens the local workers wrote for free.
 - **Recent jobs**: the status of the queues in the `jobs` folder.
 
 Your settings and keys live in `%USERPROFILE%\.handy-llm`, never in the repository. Keys are encrypted with Windows DPAPI, so only your Windows user can read them. The panel listens only on this computer and refuses requests from other web pages.
 
-Workers whose address is not on this PC, and Ollama models ending in `:cloud`, count as cloud: the panel marks them, the status line says so, and the private-data lane never uses them.
+Workers whose address is not on this PC, and Ollama models ending in `:cloud`, count as cloud: the panel marks them and the status line says so. The private-data lane skips them by default; where your data goes is your choice, so a switch in that lane allows them, with a warning, and the status line then flags the private data sent to the cloud.
 
 ## Use the scripts directly
 

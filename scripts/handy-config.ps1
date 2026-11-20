@@ -29,6 +29,7 @@ function New-HandyDefaultConfig {
   )
   return [ordered]@{
     version = 1
+    allowCloudPrivate = $false
     workers = $w
     lanes = [ordered]@{ text = @('ollama'); code = @('ollama'); files = @('ollama'); private = @('ollama') }
   }
@@ -75,14 +76,15 @@ function Test-HandyCloud($w) {
   return ([string]$w.model -match '(:|-)cloud$')
 }
 
-# Workers of a lane, in order, enabled only. The private lane never returns cloud workers.
+# Workers of a lane, in order, enabled only. The private lane skips cloud workers unless the user
+# switched on allowCloudPrivate in the panel (their choice, shown there as dangerous).
 function Get-HandyLaneWorkers($cfg, [string]$lane) {
   $ids = @($cfg.lanes.$lane)
   $out = @()
   foreach ($id in $ids) {
     $w = $cfg.workers | Where-Object { $_.id -eq $id } | Select-Object -First 1
     if (-not $w -or -not $w.enabled) { continue }
-    if ($lane -eq 'private' -and (Test-HandyCloud $w)) { continue }
+    if ($lane -eq 'private' -and (Test-HandyCloud $w) -and -not $cfg.allowCloudPrivate) { continue }
     if ($lane -eq 'files' -and -not $w.filesCapable) { continue }
     $out += $w
   }

@@ -48,6 +48,10 @@
   .slider { position: absolute; inset: 0; background: var(--line); border-radius: 99px; transition: .15s; cursor: pointer; }
   .slider::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
   .switch input:checked + .slider { background: var(--blue); }
+  .switch.red input:checked + .slider { background: var(--red); }
+  .allow { font-size: 12.5px; color: var(--muted); margin-top: 12px; gap: 10px; }
+  .danger { font-size: 11.5px; color: var(--red); font-weight: 600; }
+  .danger-box { font-size: 12.5px; color: var(--red); background: var(--red-soft); border-radius: 8px; padding: 6px 9px; margin-top: 8px; }
   .switch input:checked + .slider::before { transform: translateX(18px); }
   .off { opacity: .62; }
   .lane ol { margin: 8px 0 10px; padding: 0; list-style: none; display: grid; gap: 6px; }
@@ -118,26 +122,26 @@ const T = {
     jobsTitle: 'Recent jobs', colJob: 'Job folder', colStatus: 'Status', colChanged: 'Changed',
     lane_text: 'Text', lane_code: 'Code', lane_files: 'Files', lane_private: 'Private data',
     laneSub_text: 'Translations, rewrites, summaries, extraction.', laneSub_code: 'Writing and fixing code.',
-    laneSub_files: 'Editing files in a folder through Claude Code. Only Ollama-compatible workers.', laneSub_private: 'Confidential data. Local workers only: nothing leaves the PC.',
+    laneSub_files: 'Editing files in a folder through Claude Code. Only Ollama-compatible workers.', laneSub_private: 'Confidential data. Local workers only, unless you allow cloud workers below.',
     add: 'Add…', noWorker: 'No enabled worker: these tasks will fail.', local: 'Local', free: 'Free tier', paid: 'Paid',
     cloudWarn: 'Data sent to this service leaves your PC.', url: 'Server address', model: 'Model', loadModels: 'Load list', key: 'API key',
     keySaved: 'saved', keyNone: 'none', saveKey: 'Save', removeKey: 'Remove', test: 'Test', testing: 'Testing…', remove: 'Delete',
     saving: 'saving…', savedOk: 'saved', ollamaOn: 'Ollama', ollamaOff: 'Ollama not running', onGpu: 'loaded', up: 'running', down: 'off',
     noUsage: 'No tasks yet.', noJobs: 'No job folders yet.', cloudTok: 'Cloud workers: {n} tokens', newName: 'Name of the new server (OpenAI-compatible):',
-    skipPrivate: 'never used here: data would leave the PC', skipFiles: 'never used here: not Ollama-compatible', keyEmpty: 'Paste the key first.', keyStored: 'Key saved on this PC (encrypted). Press Test to check it works.', keyNotStored: 'The key was not saved.', keyRemoved: 'Key removed.', hint401: 'the service refused the key: check it is a key for using models (on OpenRouter: Keys, not Management keys) and that it is still active.', hint404: 'the model or address was not found: load the list and pick a model again.', hint429: 'too many requests or free quota used up: try again later.', accountWarn: 'Replace ACCOUNT_ID in the address with your Cloudflare account ID.', ollamaCloudWarn: 'This model runs in Ollama\'s cloud: data leaves your PC, and it is never used for private data.', skipOff: 'switched off', models: '{n} models', confirmDel: 'Delete this worker?' },
+    skipPrivate: 'not used: data would leave the PC (you can allow it below)', skipFiles: 'never used here: not Ollama-compatible', allowCloud: 'Also allow cloud workers (not recommended)', allowCloudOn: 'Private data can leave this PC: the cloud workers in this lane will receive it.', allowCloudConfirm: 'Private data could be sent to cloud services outside this PC. Allow it?', privateOut: 'private data leaves the PC', keyEmpty: 'Paste the key first.', keyStored: 'Key saved on this PC (encrypted). Press Test to check it works.', keyNotStored: 'The key was not saved.', keyRemoved: 'Key removed.', hint401: 'the service refused the key: check it is a key for using models (on OpenRouter: Keys, not Management keys) and that it is still active.', hint404: 'the model or address was not found: load the list and pick a model again.', hint429: 'too many requests or free quota used up: try again later.', accountWarn: 'Replace ACCOUNT_ID in the address with your Cloudflare account ID.', ollamaCloudWarn: 'This model runs in Ollama\'s cloud: data leaves your PC, and it is never used for private data.', skipOff: 'switched off', models: '{n} models', confirmDel: 'Delete this worker?' },
   it: { title: '· operai', lanesTitle: 'Corsie', lanesSub: 'Chi fa quale tipo di lavoro, in ordine. Se il primo operaio sbaglia o risponde vuoto, passa al successivo.',
     workersTitle: 'Operai', workersSub: 'Accendi quelli che vuoi usare. Le chiavi restano su questo PC, cifrate per il tuo utente Windows.',
     addWorker: '+ Aggiungi un server', usageTitle: 'Lavoro fatto', localTokens: 'Token scritti dagli operai locali (gratis)', colWorker: 'Operaio', colTasks: 'Compiti', colOk: 'OK', colToday: 'Oggi', colTokens: 'Token scritti',
     jobsTitle: 'Lavori recenti', colJob: 'Cartella del lavoro', colStatus: 'Stato', colChanged: 'Modificata',
     lane_text: 'Testi', lane_code: 'Codice', lane_files: 'File', lane_private: 'Dati riservati',
     laneSub_text: 'Traduzioni, riscritture, riassunti, estrazioni.', laneSub_code: 'Scrivere e correggere codice.',
-    laneSub_files: 'Modifiche ai file di una cartella tramite Claude Code. Solo operai compatibili con Ollama.', laneSub_private: 'Dati riservati. Solo operai locali: niente esce dal PC.',
+    laneSub_files: 'Modifiche ai file di una cartella tramite Claude Code. Solo operai compatibili con Ollama.', laneSub_private: 'Dati riservati. Solo operai locali, salvo che tu consenta quelli in cloud qui sotto.',
     add: 'Aggiungi…', noWorker: 'Nessun operaio acceso: questi compiti falliranno.', local: 'Locale', free: 'Gratis con limiti', paid: 'A pagamento',
     cloudWarn: 'I dati inviati a questo servizio escono dal tuo PC.', url: 'Indirizzo del server', model: 'Modello', loadModels: 'Carica elenco', key: 'Chiave API',
     keySaved: 'salvata', keyNone: 'nessuna', saveKey: 'Salva', removeKey: 'Togli', test: 'Prova', testing: 'Provo…', remove: 'Elimina',
     saving: 'salvo…', savedOk: 'salvato', ollamaOn: 'Ollama', ollamaOff: 'Ollama spento', onGpu: 'caricato', up: 'acceso', down: 'spento',
     noUsage: 'Ancora nessun compito.', noJobs: 'Ancora nessuna cartella di lavoro.', cloudTok: 'Operai in cloud: {n} token', newName: 'Nome del nuovo server (compatibile OpenAI):',
-    skipPrivate: 'mai usato qui: i dati uscirebbero dal PC', skipFiles: 'mai usato qui: non compatibile con Ollama', keyEmpty: 'Prima incolla la chiave.', keyStored: 'Chiave salvata su questo PC (cifrata). Premi Prova per controllare che funzioni.', keyNotStored: 'La chiave non è stata salvata.', keyRemoved: 'Chiave tolta.', hint401: 'il servizio ha rifiutato la chiave: controlla che sia una chiave per usare i modelli (su OpenRouter: Keys, non Management keys) e che sia ancora attiva.', hint404: 'modello o indirizzo non trovato: carica l\'elenco e scegli di nuovo il modello.', hint429: 'troppe richieste o quota gratuita finita: riprova più tardi.', accountWarn: 'Sostituisci ACCOUNT_ID nell\'indirizzo con l\'ID del tuo account Cloudflare.', ollamaCloudWarn: 'Questo modello gira nel cloud di Ollama: i dati escono dal PC, e non viene mai usato per i dati riservati.', skipOff: 'spento', models: '{n} modelli', confirmDel: 'Eliminare questo operaio?' }
+    skipPrivate: 'non usato: i dati uscirebbero dal PC (puoi consentirlo qui sotto)', skipFiles: 'mai usato qui: non compatibile con Ollama', allowCloud: 'Consenti anche operai in cloud (sconsigliato)', allowCloudOn: 'I dati riservati possono uscire dal PC: gli operai in cloud di questa corsia li riceveranno.', allowCloudConfirm: 'I dati riservati potrebbero essere inviati a servizi in cloud fuori da questo PC. Vuoi consentirlo?', privateOut: 'i dati riservati escono dal PC', keyEmpty: 'Prima incolla la chiave.', keyStored: 'Chiave salvata su questo PC (cifrata). Premi Prova per controllare che funzioni.', keyNotStored: 'La chiave non è stata salvata.', keyRemoved: 'Chiave tolta.', hint401: 'il servizio ha rifiutato la chiave: controlla che sia una chiave per usare i modelli (su OpenRouter: Keys, non Management keys) e che sia ancora attiva.', hint404: 'modello o indirizzo non trovato: carica l\'elenco e scegli di nuovo il modello.', hint429: 'troppe richieste o quota gratuita finita: riprova più tardi.', accountWarn: 'Sostituisci ACCOUNT_ID nell\'indirizzo con l\'ID del tuo account Cloudflare.', ollamaCloudWarn: 'Questo modello gira nel cloud di Ollama: i dati escono dal PC, e non viene mai usato per i dati riservati.', skipOff: 'spento', models: '{n} modelli', confirmDel: 'Eliminare questo operaio?' }
 };
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 let lang = (store.get('handy-lang') || navigator.language || 'en').slice(0, 2) === 'it' ? 'it' : 'en';
@@ -161,7 +165,7 @@ function save() {
   $('#saved').textContent = t('saving');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    try { cfg = await api('/api/config', { workers: cfg.workers, lanes: cfg.lanes }); $('#saved').textContent = t('savedOk'); renderLanes(); }
+    try { cfg = await api('/api/config', { allowCloudPrivate: !!cfg.allowCloudPrivate, workers: cfg.workers, lanes: cfg.lanes }); $('#saved').textContent = t('savedOk'); renderLanes(); }
     catch (e) { $('#saved').textContent = e.message; }
   }, 450);
 }
@@ -170,7 +174,7 @@ function tierBadge(w) { return `<span class="badge b-${esc(w.tier)}">${t(w.tier)
 const isCloud = w => w.kind !== 'local' || /(:|-)cloud$/.test(w.model || '');
 function skipReason(lane, w) {
   if (!w.enabled) return t('skipOff');
-  if (lane === 'private' && isCloud(w)) return t('skipPrivate');
+  if (lane === 'private' && isCloud(w) && !cfg.allowCloudPrivate) return t('skipPrivate');
   if (lane === 'files' && !w.filesCapable) return t('skipFiles');
   return '';
 }
@@ -183,10 +187,12 @@ function renderLanes() {
     const el = document.createElement('div'); el.className = 'card lane';
     el.innerHTML = `<h2>${t('lane_' + lane)}</h2><div class="muted" style="font-size:12.5px">${t('laneSub_' + lane)}</div>
       <ol>${chain.map((id, i) => { const w = cfg.workers.find(x => x.id === id); if (!w) return ''; const why = skipReason(lane, w);
-        return `<li class="${why ? 'skip' : ''}" title="${esc(why)}"><span class="pos">${i + 1}</span><span class="n">${esc(w.name)}${w.model ? ' · <span class="muted">' + esc(w.model) + '</span>' : ''}${why ? '<br><span class="why">' + esc(why) + '</span>' : ''}</span>
+        return `<li class="${why ? 'skip' : ''}" title="${esc(why)}"><span class="pos">${i + 1}</span><span class="n">${esc(w.name)}${w.model ? ' · <span class="muted">' + esc(w.model) + '</span>' : ''}${why ? '<br><span class="why">' + esc(why) + '</span>' : ''}${!why && lane === 'private' && isCloud(w) ? '<br><span class="danger">' + t('privateOut') + '</span>' : ''}</span>
         <button class="icon" data-a="up" data-i="${i}" aria-label="up">↑</button><button class="icon" data-a="down" data-i="${i}" aria-label="down">↓</button><button class="icon" data-a="rm" data-i="${i}" aria-label="remove">✕</button></li>`; }).join('')}</ol>
       ${usable.length ? '' : `<div class="empty">${t('noWorker')}</div>`}
-      <select data-a="add"><option value="">${t('add')}</option>${cfg.workers.filter(w => !chain.includes(w.id) && !(lane === 'private' && isCloud(w)) && !(lane === 'files' && !w.filesCapable)).map(w => `<option value="${esc(w.id)}">${esc(w.name)}${w.enabled ? '' : ' (' + t('skipOff') + ')'}</option>`).join('')}</select>`;
+      ${lane === 'private' ? `<div class="row between allow"><span>${t('allowCloud')}</span><label class="switch red"><input type="checkbox" data-a="allow" ${cfg.allowCloudPrivate ? 'checked' : ''}><span class="slider"></span></label></div>
+        ${cfg.allowCloudPrivate ? `<div class="danger-box">${t('allowCloudOn')}</div>` : ''}` : ''}
+      <select data-a="add"><option value="">${t('add')}</option>${cfg.workers.filter(w => !chain.includes(w.id) && !(lane === 'private' && isCloud(w) && !cfg.allowCloudPrivate) && !(lane === 'files' && !w.filesCapable)).map(w => `<option value="${esc(w.id)}">${esc(w.name)}${w.enabled ? '' : ' (' + t('skipOff') + ')'}</option>`).join('')}</select>`;
     el.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
       const i = +b.dataset.i, c = cfg.lanes[lane];
@@ -194,6 +200,11 @@ function renderLanes() {
       if (b.dataset.a === 'down' && i < c.length - 1) [c[i + 1], c[i]] = [c[i], c[i + 1]];
       if (b.dataset.a === 'rm') c.splice(i, 1);
       renderLanes(); save();
+    });
+    const allow = $('[data-a=allow]', el);
+    if (allow) allow.addEventListener('change', e => {
+      if (e.target.checked && !confirm(t('allowCloudConfirm'))) { e.target.checked = false; return; }
+      cfg.allowCloudPrivate = e.target.checked; renderLanes(); save();
     });
     $('select', el).addEventListener('change', e => { if (!e.target.value) return; (cfg.lanes[lane] ||= []).push(e.target.value); renderLanes(); save(); });
     box.appendChild(el);

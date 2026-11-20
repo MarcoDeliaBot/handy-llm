@@ -30,14 +30,14 @@ When switched on: confirm in one line and run the check in §2 at once, so the f
 
 ## 1. Routing
 
-The user chooses the workers in the panel (`handy-panel.cmd`, http://localhost:8765): which local and cloud models are on, and their order in four lanes: `text`, `code`, `files`, `private`. Pass the lane to the scripts (`-Lane text|code|private`; files mode uses the `files` lane) and do not name a model yourself unless the user asks: the scripts follow the panel and fall back to the next worker of the lane by themselves. The status line says which worker answered, and whether data went to a cloud service. Confidential data always goes to `-Lane private`, which never uses cloud workers.
+The user chooses the workers in the panel (`handy-panel.cmd`, http://localhost:8765): which local and cloud models are on, and their order in four lanes: `text`, `code`, `files`, `private`. Pass the lane to the scripts (`-Lane text|code|private`; files mode uses the `files` lane) and do not name a model yourself unless the user asks: the scripts follow the panel and fall back to the next worker of the lane by themselves. The status line says which worker answered, and whether data went to a cloud service. Confidential data always goes to `-Lane private`, which uses only local workers unless the user switched on "also allow cloud workers" in the panel. That choice is the user's: never switch it on yourself, and if a status line says `PRIVATE data sent to a cloud service`, mention it in the report.
 
 | Piece of work | Who does it |
 |---|---|
 | Translations, rewrites, summaries, titles and meta descriptions, classification, extracting data from a text, test cases, bulk checks on texts | **Text mode, `-Lane text`** (§3–5) |
 | Writing or fixing code returned as text | **Text mode, `-Lane code`** |
 | Reading and editing files in one folder: replacements, additions, fixes in HTML, docs, code, config | **Local LLM, files mode** (§6) |
-| Texts or files with confidential data | **`-Lane private`** (local workers only, data never leaves the PC) |
+| Texts or files with confidential data | **`-Lane private`** (local workers only, unless the user allowed cloud in the panel) |
 | Shell commands (git, npm, build, deploy), web browsing, connectors, urgent work, pieces the local model failed twice | **Cloud helper** (for example a fast Claude subagent) or Claude itself |
 | Payments, sending email or messages, irreversible actions, decisions | **Claude itself**, with the user's approval |
 

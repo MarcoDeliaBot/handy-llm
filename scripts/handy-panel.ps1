@@ -40,7 +40,7 @@ function PublicConfig {
     $o = [ordered]@{}; foreach ($p in $w.PSObject.Properties) { $o[$p.Name] = $p.Value }
     $o.hasKey = (Test-HandyHasKey $w.id); [pscustomobject]$o
   }
-  return [ordered]@{ workers = @($ws); lanes = $cfg.lanes }
+  return [ordered]@{ allowCloudPrivate = [bool]$cfg.allowCloudPrivate; workers = @($ws); lanes = $cfg.lanes }
 }
 
 function ListModels($w) {
@@ -102,7 +102,7 @@ function SaveConfig($in) {
   }
   $lanes = [ordered]@{}
   foreach ($l in @('text','code','files','private')) { $lanes[$l] = @(@($in.lanes.$l) | Where-Object { $ids[[string]$_] } | ForEach-Object { [string]$_ }) }
-  Save-HandyConfig ([ordered]@{ version = 1; workers = @($workers); lanes = $lanes })
+  Save-HandyConfig ([ordered]@{ version = 1; allowCloudPrivate = [bool]$in.allowCloudPrivate; workers = @($workers); lanes = $lanes })
   # drop keys of removed workers
   Get-ChildItem (Join-Path (Get-HandyDataDir) 'keys') -Filter *.key | Where-Object { -not $ids[$_.BaseName] } | Remove-Item -ErrorAction SilentlyContinue
 }
