@@ -2,3 +2,4 @@ jobs/
 *.status
 *.result.txt
 .ai/
+dist/

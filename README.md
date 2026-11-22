@@ -49,7 +49,10 @@ ollama pull qwen3.8:27b
 ollama create qwen3.8-cc -f "$env:USERPROFILE\handy-llm\examples\Modelfile"
 ```
 
-Then add `skills/handy-llm` to your Claude skills: upload the folder as a skill in the Claude app, or copy it into `~/.claude/skills/` for Claude Code.
+Then add the skill to Claude:
+
+- **Claude app (claude.ai, desktop):** run `.\scripts\make-skill-zip.ps1`, then in Claude open **Plugin > Add > Upload plugin** and pick `dist\handy-llm.zip`. The script checks what the upload requires: YAML frontmatter with LF line endings, a description of at most 200 characters, and the `handy-llm/` folder at the top of the zip. Skills in your account also load in Claude Code when you sign in with the same account.
+- **Claude Code only:** copy `skills/handy-llm` into `~/.claude/skills/`. Do not keep both copies, or Claude Code sees the skill twice.
 
 ## The workers panel
 

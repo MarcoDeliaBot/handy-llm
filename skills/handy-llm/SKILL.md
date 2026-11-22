@@ -1,6 +1,6 @@
 ---
 name: handy-llm
-description: "Chat mode: after 'use handy' or 'use the local model', Claude splits every job, hands the routine pieces to a local LLM (Ollama or any OpenAI-compatible server) instead of a paid helper model, then checks everything."
+description: "Chat mode: after 'use handy', Claude splits each job, gives routine pieces to a local LLM (Ollama or any OpenAI-compatible server) instead of a paid helper, then checks everything."
 ---
 
 # handy-llm: a local LLM as free hands
